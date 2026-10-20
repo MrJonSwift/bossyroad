@@ -1,0 +1,75 @@
+name: Deploy to GitHub Pages
+
+# The game is a static bundle, so Pages is the whole hosting story. The build
+# runs the same checks as a local session (typecheck, tests, build) before
+# anything is published, and the service worker needs the HTTPS origin that
+# Pages provides.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel a running deploy: a half-published
+# bundle would break the precache for every installed copy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Creates the Pages site with "GitHub Actions" as the source if it does
+      # not exist yet, so a fresh clone of this repository can deploy without
+      # anyone clicking through the repository settings first.
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # The site is served from https://<owner>.github.io/bossyroad/, so
+          # every asset, the manifest, the icons and the service worker scope
+          # need the /bossyroad/ prefix.
+          BASE_PATH: /bossyroad/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

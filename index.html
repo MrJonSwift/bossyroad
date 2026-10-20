@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#6cc24a" />
+    <meta
+      name="description"
+      content="Bossy Road - a kid-friendly, offline voxel hopper."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bossy Road" />
+    <meta name="color-scheme" content="light" />
+    <title>Bossy Road</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" aria-label="Bossy Road game"></canvas>
+      <div id="hud" aria-live="polite">
+        <header class="hud-top">
+          <div class="brand" aria-label="Bossy Road">
+            <span class="brand-top">BOSSY</span>
+            <span class="brand-bottom">ROAD</span>
+          </div>
+          <div class="score-pill" id="score-pill">
+            <span class="pill-label">SCORE</span>
+            <span class="pill-value" id="score">0</span>
+          </div>
+          <div class="hud-right">
+            <div class="best-pill">
+              <span class="pill-label">BEST</span>
+              <span class="pill-value small" id="best">0</span>
+            </div>
+            <div class="coin-pill" aria-label="Coin balance">
+              <span class="coin-dot" aria-hidden="true"></span>
+              <span class="pill-value small" id="hud-coins">0</span>
+            </div>
+          </div>
+        </header>
+        <div class="hud-actions">
+          <button
+            class="icon-button"
+            id="pause-button"
+            type="button"
+            aria-label="Pause"
+            title="Pause"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="6.5" y="5" width="4.2" height="14" rx="1.6" />
+              <rect x="13.3" y="5" width="4.2" height="14" rx="1.6" />
+            </svg>
+          </button>
+          <button
+            class="icon-button"
+            id="settings-button"
+            type="button"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <circle cx="9" cy="7" r="2.1" />
+              <circle cx="15" cy="12" r="2.1" />
+              <circle cx="8" cy="17" r="2.1" />
+            </svg>
+          </button>
+        </div>
+        <div class="hint is-hidden" id="hint">TAP TO HOP &middot; SWIPE TO TURN</div>
+        <div class="overlay title-overlay" id="title-screen">
+          <div class="title-card">
+            <div class="title-logo" aria-label="Bossy Road">
+              <span class="title-logo-top">BOSSY</span>
+              <span class="title-logo-bottom">ROAD</span>
+            </div>
+            <p class="title-best">BEST <strong id="title-best">0</strong></p>
+            <div class="title-crew">
+              <span class="portrait-frame title-portrait-frame" aria-hidden="true">
+                <canvas id="title-portrait" class="portrait"></canvas>
+              </span>
+              <span class="title-crew-text">
+                <span class="crew-label">PLAYING AS</span>
+                <span class="crew-name" id="title-character">BOSSY</span>
+              </span>
+              <span class="coin-balance" aria-label="Coin balance">
+                <span class="coin-dot" aria-hidden="true"></span>
+                <span id="title-coins">0</span>
+              </span>
+            </div>
+            <p class="tap-prompt">TAP TO START</p>
+            <button class="big-button characters-button" id="characters-button" type="button">
+              CHARACTERS
+            </button>
+            <p class="title-controls">HOP &middot; DODGE &middot; KEEP GOING</p>
+            <button class="install-hint" id="install-hint" type="button" hidden>
+              <span class="install-hint-main">SHARE &rarr; ADD TO HOME SCREEN</span>
+              <span class="install-hint-sub">TAP TO HIDE</span>
+            </button>
+          </div>
+        </div>
+        <div class="overlay gameover-overlay" id="gameover-screen" hidden>
+          <div class="result-card">
+            <h2 class="result-title">RUN OVER</h2>
+            <div class="result-stats">
+              <div class="result-stat">
+                <span>SCORE</span>
+                <strong id="run-score">0</strong>
+              </div>
+              <div class="result-stat">
+                <span>BEST</span>
+                <strong id="run-best">0</strong>
+              </div>
+            </div>
+            <div class="result-coins-row">
+              <p class="result-coins">COINS <strong id="run-coins">0</strong></p>
+              <p class="result-balance">TOTAL <strong id="run-coins-total">0</strong></p>
+            </div>
+            <p class="tap-prompt retry-prompt">TAP TO RETRY</p>
+            <button class="ghost-button result-button" id="result-characters-button" type="button">
+              CHARACTERS
+            </button>
+          </div>
+        </div>
+        <div class="overlay panel-overlay pause-overlay" id="pause-screen" hidden>
+          <div class="panel-card">
+            <p class="panel-kicker">TAKE A BREATH</p>
+            <h2 class="panel-title">PAUSED</h2>
+            <button class="big-button" id="resume-button" type="button">
+              RESUME
+            </button>
+            <button class="ghost-button" id="pause-settings-button" type="button">
+              SETTINGS
+            </button>
+          </div>
+        </div>
+        <div class="overlay panel-overlay settings-overlay" id="settings-screen" hidden>
+          <div class="panel-card settings-card">
+            <p class="panel-kicker">BOSSY ROAD</p>
+            <h2 class="panel-title">SETTINGS</h2>
+            <button
+              class="setting-row"
+              id="sound-toggle"
+              type="button"
+              aria-pressed="true"
+            >
+              <span class="setting-name">SOUND</span>
+              <span class="setting-value" id="sound-value">ON</span>
+            </button>
+            <button
+              class="setting-row"
+              id="motion-toggle"
+              type="button"
+              aria-pressed="false"
+            >
+              <span class="setting-name">REDUCED MOTION</span>
+              <span class="setting-value" id="motion-value">OFF</span>
+            </button>
+            <button class="setting-row danger" id="reset-button" type="button">
+              <span class="setting-name" id="reset-label">RESET PROGRESS</span>
+              <span class="setting-value" id="reset-value">TAP TWICE</span>
+            </button>
+            <p class="setting-note" id="reset-note"></p>
+            <button class="big-button" id="settings-close" type="button">
+              DONE
+            </button>
+            <p class="version-label" id="version-label"></p>
+            <p class="update-note" id="update-note" hidden>
+              UPDATE READY &middot; REOPEN TO APPLY
+            </p>
+            <p class="offline-note">MADE FOR OFFLINE PLAY</p>
+          </div>
+        </div>
+        <div class="overlay panel-overlay characters-overlay" id="characters-screen" hidden>
+          <div class="panel-card characters-card">
+            <div class="characters-head">
+              <p class="panel-kicker">YOUR CREW</p>
+              <span class="coin-balance coin-balance-large" aria-label="Coin balance">
+                <span class="coin-dot" aria-hidden="true"></span>
+                <span id="shop-coins">0</span>
+              </span>
+            </div>
+            <h2 class="panel-title">CHARACTERS</h2>
+            <div class="character-grid" id="character-grid"></div>
+            <p class="shop-note" id="shop-note"></p>
+            <button class="big-button" id="characters-close" type="button">
+              DONE
+            </button>
+          </div>
+        </div>
+        <div class="debug" id="debug" hidden></div>
+      </div>
+    </div>
+    <noscript>Bossy Road needs JavaScript to run.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

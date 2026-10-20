@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+.vite/
+coverage/
+
+# Agent / session working notes and project docs — kept local, never published
+AGENTS.md
+context.md
+NEXT.md
+.scratch/
+docs/
