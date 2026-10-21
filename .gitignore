@@ -11,3 +11,8 @@ context.md
 NEXT.md
 .scratch/
 docs/
+
+
+.env
+.env.*
+!.env.example
