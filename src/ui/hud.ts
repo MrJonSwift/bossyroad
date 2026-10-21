@@ -170,7 +170,7 @@ export class Hud {
   private setZone(zone: number): void {
     const text = zone > 0 ? zoneLabel(zone) : "";
 
-    if (text && text !== this.zoneText) {
+    if (text !== this.zoneText) {
       this.zoneText = text;
       this.zoneLabel.textContent = text;
     }
@@ -295,7 +295,7 @@ export class Hud {
       }
     }
 
-    if (this.bannerTimer > 0) {
+    if (!this.paused && this.bannerTimer > 0) {
       this.bannerTimer -= dt;
       if (this.bannerTimer <= 0) {
         this.bannerTimer = 0;

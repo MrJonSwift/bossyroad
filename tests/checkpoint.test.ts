@@ -161,12 +161,14 @@ describe("checkpoint snapshots", () => {
 
   it("keeps only the latest zone snapshot", () => {
     const state = playingGame();
-    enterZone(state, 8);
-    expect(state.checkpoint?.zone).toBe(8);
-
     // Ten safe rows ahead: wandering through this zone keeps the zone-8
-    // snapshot until the player touches the zone-9 boundary row.
-    flatten(state, 80, 90);
+    // snapshot until the player touches the zone-9 boundary row. Flatten
+    // before the capture so the fixture survives any future restore.
+    enterZone(state, 8, (s) => {
+      flatten(s, 80, 90);
+    });
+    expect(state.checkpoint?.zone).toBe(8);
+    clearHazards(state);
     clearHazards(state);
     const entryZ = state.player.z;
 
@@ -391,10 +393,11 @@ describe("the eagle still rules the respawn tile", () => {
 
   it("measures backtracking from the snapshot's furthest row", () => {
     const state = playingGame();
-    enterZone(state, 8);
-
-    // The retreat below lands on 77..79; make those safe before the run.
-    flatten(state, 77, 79);
+    // 77..79 must be safe *in the snapshot*, or the restore bites the
+    // retreat: flatten runs in the decorate hook, before the capture.
+    enterZone(state, 8, (s) => {
+      flatten(s, 77, 79);
+    });
 
     // Walk three rows into the zone on safe rows, then die there.
     flatten(state, 81, 83);
