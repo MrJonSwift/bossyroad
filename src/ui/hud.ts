@@ -6,7 +6,7 @@ import {
 import { drawPortrait } from "../characters/portrait";
 import type { RenderInfo } from "../render/renderer";
 import type { GameState, RunPhase } from "../sim/types";
-import { zoneIndex, zoneLabel } from "../sim/zones";
+import { ZONE_ROWS, zoneIndex, zoneLabel } from "../sim/zones";
 
 function requiredElement<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -168,7 +168,10 @@ export class Hud {
   }
 
   private setZone(zone: number): void {
-    const text = zone > 0 ? zoneLabel(zone) : "";
+    // zoneLabel speaks rows; convert the child-facing zone index to its
+    // first row. (zoneStart would call zoneIndex on this index and collapse
+    // every zone below 10 back to row 0.)
+    const text = zone > 0 ? zoneLabel(zone * ZONE_ROWS) : "";
 
     if (text !== this.zoneText) {
       this.zoneText = text;
@@ -285,7 +288,7 @@ export class Hud {
       this.setZone(zone);
 
       if (!this.reducedMotion) {
-        this.zoneBanner.textContent = zoneLabel(zone);
+        this.zoneBanner.textContent = zoneLabel(zone * ZONE_ROWS);
         this.zoneBanner.classList.remove("is-pop");
         // Reflow so a zone crossed in quick succession restarts the pop.
         void this.zoneBanner.offsetWidth;
