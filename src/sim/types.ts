@@ -216,6 +216,36 @@ export interface GameState {
   minZ: number;
   /** Furthest row the player may hop to, always ahead of the window. */
   maxZ: number;
+  /**
+   * Snapshot taken when the player first entered their current zone. Only the
+   * latest is kept; a zone retry restores it exactly.
+   */
+  checkpoint: RunCheckpoint | null;
+}
+
+/**
+ * A full pure copy of the live run, captured on a zone boundary. Restoring one
+ * continues the run deterministically: rows are never mutated after
+ * generation, and the generator's RNG streams are re-created at the captured
+ * position, so the resumed timeline equals the uninterrupted one.
+ */
+export interface RunCheckpoint {
+  /** Zero-based zone index this snapshot opens. */
+  zone: number;
+  player: PlayerState;
+  cars: CarState[];
+  logs: LogState[];
+  rails: RailState[];
+  coinDrops: CoinState[];
+  coins: number;
+  runCoins: number;
+  idleTime: number;
+  score: number;
+  phaseTime: number;
+  world: WorldRow[];
+  generator: WorldGenerator;
+  minZ: number;
+  maxZ: number;
 }
 
 export interface PlayerPose {

@@ -4,16 +4,31 @@
  * Keeping this pure and deterministic means a seed can reproduce a whole run,
  * which is invaluable when a player reports "the impossible bit at row 63".
  */
-export type Rng = () => number;
+export type Rng = (() => number) & {
+  /**
+   * Internal state, kept on the function object so a stream can be copied
+   * byte-for-byte. Simulation snapshots fork their generator streams this way
+   * and a resumed run stays deterministic.
+   */
+  t: number;
+};
 
 export function mulberry32(seed: number): Rng {
   let t = seed >>> 0;
-  return () => {
+  const rng = (() => {
     t = (t + 0x6d2b79f5) >>> 0;
     let r = Math.imul(t ^ (t >>> 15), 1 | t);
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    rng.t = t;
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
+  }) as Rng;
+  rng.t = t;
+  return rng;
+}
+
+/** A new stream positioned exactly where `rng` stands now. */
+export function copyRng(rng: Rng): Rng {
+  return mulberry32(rng.t);
 }
 
 export function pick<T>(rng: Rng, items: readonly T[]): T {
