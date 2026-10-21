@@ -716,6 +716,18 @@ input {
   margin-top: 10px;
 }
 
+/*
+ * Ghost buttons were designed for dark surfaces (title, pause), where cream
+ * text is correct. On the cream result cards the same class pair renders
+ * cream-on-cream and the secondary actions vanish (shipped like this in
+ * v1.0.1: CHARACTERS and HOME were unreadable on the game-over card). Ink
+ * wins on cards, deterministic via specificity over both single classes.
+ */
+.result-card .result-button,
+.checkpoint-card .result-button {
+  color: var(--ink);
+}
+
 #hud.is-title .score-pill,
 #hud.is-title .best-pill {
   opacity: 0.55;
