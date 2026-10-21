@@ -38,8 +38,17 @@ export function registerServiceWorker(
   hooks: PwaHooks = {},
   env: PwaEnvironment = {},
 ): void {
-  const baseUrl = env.baseUrl ?? import.meta.env?.BASE_URL ?? "/";
   const container = "container" in env ? env.container : browserContainer();
+
+  // The dev server does not emit sw.js (that is a build artifact), so an
+  // implicit dev registration would only surface a confusing MIME-type
+  // console error. Test and preview setups pass an explicit container and
+  // are never skipped.
+  if (import.meta.env.DEV && !("container" in env)) {
+    return;
+  }
+
+  const baseUrl = env.baseUrl ?? import.meta.env?.BASE_URL ?? "/";
 
   if (!container) {
     return;

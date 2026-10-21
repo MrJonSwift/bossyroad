@@ -1,6 +1,7 @@
 import { advanceCars, carHitsPlayer } from "./cars";
 import { advanceCoins, collectCoins, coinsForWorld } from "./coins";
 import { difficultyForScore, eagleGraceAt } from "./difficulty";
+import { copyWorldGenerator } from "./generator";
 import { advanceLogs, logAt, wrappedLogDelta } from "./logs";
 import { advanceRails, trainsHitPlayer } from "./rails";
 import {
@@ -11,6 +12,7 @@ import {
   type GameState,
   type PlayerPose,
   type PlayerState,
+  type RunCheckpoint,
 } from "./types";
 import {
   PLAYER_MIN_Z,
@@ -25,6 +27,7 @@ import {
   syncRails,
   syncWorld,
 } from "./world";
+import { isZoneBoundary, zoneIndex } from "./zones";
 
 export const HOP_SECONDS = 0.14;
 export const HOP_HEIGHT = 0.55;
@@ -107,6 +110,7 @@ export function createGame(
     generator: world.generator,
     minZ: PLAYER_MIN_Z,
     maxZ: world.maxZ,
+    checkpoint: null,
   };
 }
 
@@ -134,8 +138,105 @@ export function startRun(state: GameState): boolean {
   state.runCoins = 0;
   state.idleTime = 0;
   state.deathCause = null;
+  // A fresh run has no zone history yet; the first boundary captures again.
+  state.checkpoint = null;
   state.phase = "playing";
   state.phaseTime = 0;
+  return true;
+}
+
+function cloneAll<T extends object>(items: readonly T[]): T[] {
+  return items.map((item) => ({ ...item }));
+}
+
+/**
+ * Copy the live run at a zone entry. Rows are shared, never mutated after
+ * generation; every mutable thing is cloned so later steps cannot leak into
+ * the snapshot.
+ */
+function captureCheckpoint(state: GameState, zone: number): RunCheckpoint {
+  return {
+    zone,
+    player: { ...state.player },
+    cars: cloneAll(state.cars),
+    logs: cloneAll(state.logs),
+    rails: cloneAll(state.rails),
+    coinDrops: cloneAll(state.coinDrops),
+    coins: state.coins,
+    runCoins: state.runCoins,
+    idleTime: state.idleTime,
+    score: state.score,
+    phaseTime: state.phaseTime,
+    world: state.world.slice(),
+    generator: copyWorldGenerator(state.generator),
+    minZ: state.minZ,
+    maxZ: state.maxZ,
+  };
+}
+
+/**
+ * Called on every landing. The first boundary row of a new zone becomes the
+ * latest checkpoint; older snapshots are dropped.
+ */
+function noteZoneEntry(state: GameState): void {
+  const zone = zoneIndex(state.player.z);
+
+  if (!isZoneBoundary(state.player.z)) {
+    return;
+  }
+
+  if (zone <= (state.checkpoint?.zone ?? -1)) {
+    return;
+  }
+
+  state.checkpoint = captureCheckpoint(state, zone);
+}
+
+/**
+ * Put the run back at its zone entry. Score is restored to the snapshot's
+ * furthest row, not the death-time furthest: a restored score of 85 with the
+ * player standing on row 80 would false-trigger the 3-rows-behind eagle rule
+ * on the very next step. The persistent best is never lowered — `endRun`
+ * already raised it at death time, and it is not restored here.
+ *
+ * `runId` stays: the snapshot's rows are the same seeded content already
+ * showing, so the renderer keeps its meshes and only re-adds recycled depths.
+ */
+function restoreCheckpoint(state: GameState, saved: RunCheckpoint): void {
+  state.player = { ...saved.player };
+  state.cars = cloneAll(saved.cars);
+  state.logs = cloneAll(saved.logs);
+  state.rails = cloneAll(saved.rails);
+  state.coinDrops = cloneAll(saved.coinDrops);
+  state.coins = saved.coins;
+  state.runCoins = saved.runCoins;
+  state.idleTime = saved.idleTime;
+  state.score = saved.score;
+  state.phaseTime = saved.phaseTime;
+  state.deathCause = null;
+  state.minZ = saved.minZ;
+  state.maxZ = saved.maxZ;
+  state.world = saved.world.slice();
+  state.generator = copyWorldGenerator(saved.generator);
+}
+
+/**
+ * Zone retry, the checkpoint card's TRY AGAIN. Same beat and lock as a full
+ * retry; the run simply resumes from the snapshot instead of row 0.
+ */
+export function retryCheckpoint(state: GameState): boolean {
+  const saved = state.checkpoint;
+  const ready =
+    saved !== null &&
+    state.phase === "gameover" &&
+    state.phaseTime >= RESTART_LOCK_SECONDS;
+
+  if (!saved || !ready) {
+    return false;
+  }
+
+  restoreCheckpoint(state, saved);
+  state.phase = "playing";
   return true;
 }
 
@@ -317,6 +418,8 @@ function advancePlayer(state: GameState, dt: number): void {
   if (state.phase !== "playing") {
     return;
   }
+
+  noteZoneEntry(state);
 
   if (player.queued) {
     const next = player.queued;

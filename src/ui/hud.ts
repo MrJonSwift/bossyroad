@@ -6,6 +6,7 @@ import {
 import { drawPortrait } from "../characters/portrait";
 import type { RenderInfo } from "../render/renderer";
 import type { GameState, RunPhase } from "../sim/types";
+import { ZONE_ROWS, zoneIndex, zoneLabel } from "../sim/zones";
 
 function requiredElement<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -45,6 +46,20 @@ export class Hud {
   private readonly runScore = requiredElement<HTMLElement>("#run-score");
   private readonly runBest = requiredElement<HTMLElement>("#run-best");
   private readonly scorePill = requiredElement<HTMLDivElement>("#score-pill");
+  private readonly zoneLabel = requiredElement<HTMLElement>("#zone-label");
+  private readonly zoneBanner = requiredElement<HTMLDivElement>("#zone-banner");
+  private readonly checkpointScreen =
+    requiredElement<HTMLDivElement>("#checkpoint-screen");
+  private readonly checkpointZone =
+    requiredElement<HTMLElement>("#checkpoint-zone");
+  private readonly checkpointScore =
+    requiredElement<HTMLElement>("#checkpoint-score");
+  private readonly checkpointBest =
+    requiredElement<HTMLElement>("#checkpoint-best");
+  private readonly checkpointCoins =
+    requiredElement<HTMLElement>("#checkpoint-coins");
+  private readonly checkpointCoinsTotal =
+    requiredElement<HTMLElement>("#checkpoint-coins-total");
   private readonly pauseButton =
     requiredElement<HTMLButtonElement>("#pause-button");
   private readonly showDebug =
@@ -57,6 +72,16 @@ export class Hud {
   private hintDismissed = false;
   private paused = false;
   private debugTimer = 0;
+  /**
+   * The player's zone, baselined on entering `playing` so a respawn into the
+   * zone it just recreated never fires its own banner.
+   */
+  private lastZone = -1;
+  private zoneText = "";
+  private showCheckpoint = false;
+  /** Seconds left before the zone banner steps aside again. */
+  private bannerTimer = 0;
+  private reducedMotion = false;
 
   constructor() {
     this.debug.hidden = !this.showDebug;
@@ -107,6 +132,15 @@ export class Hud {
     this.applyHint();
   }
 
+  /** Mirrors the motion decision so the banner can be skipped, not just still. */
+  setReducedMotion(reduced: boolean): void {
+    this.reducedMotion = reduced;
+    if (reduced) {
+      this.zoneBanner.hidden = true;
+      this.bannerTimer = 0;
+    }
+  }
+
   private applyPhase(state: GameState): void {
     const phase = state.phase;
     const isTitle = phase === "title";
@@ -120,11 +154,30 @@ export class Hud {
 
     if (isPlaying && previous !== "playing") {
       this.hintDismissed = false;
+      // Any play entry rebaselines the zone. A checkpoint retry starts the
+      // player standing in the zone again, so it must not banner itself.
+      this.lastZone = Math.max(0, zoneIndex(state.player.z));
+      this.setZone(this.lastZone);
+      this.zoneBanner.hidden = true;
+      this.bannerTimer = 0;
     }
 
     this.lastPhase = phase;
     this.applyButtons();
     this.applyHint();
+  }
+
+  private setZone(zone: number): void {
+    // zoneLabel speaks rows; convert the child-facing zone index to its
+    // first row. (zoneStart would call zoneIndex on this index and collapse
+    // every zone below 10 back to row 0.)
+    const text = zone > 0 ? zoneLabel(zone * ZONE_ROWS) : "";
+
+    if (text !== this.zoneText) {
+      this.zoneText = text;
+      this.zoneLabel.textContent = text;
+    }
+    this.zoneLabel.hidden = text === "";
   }
 
   private applyButtons(): void {
@@ -141,6 +194,9 @@ export class Hud {
     if (state.phase !== this.lastPhase) {
       this.applyPhase(state);
     }
+
+    this.applyCheckpoint(state);
+    this.applyZone(state, dt);
 
     if (state.score !== this.lastScore) {
       this.score.textContent = String(state.score);
@@ -189,6 +245,66 @@ export class Hud {
       `draws  ${info.calls}`,
       `tris   ${compact(info.triangles)}`,
     ].join("\n");
+  }
+
+  /**
+   * The checkpoint card owns the game-over moment while a zone snapshot
+   * exists; FINISH clears the snapshot in `main` and this hands the stage
+   * straight back to the plain game-over card.
+   */
+  private applyCheckpoint(state: GameState): void {
+    const show = state.phase === "gameover" && state.checkpoint !== null;
+
+    if (show === this.showCheckpoint) {
+      return;
+    }
+
+    this.showCheckpoint = show;
+    this.checkpointScreen.hidden = !show;
+    this.gameoverScreen.hidden = show || state.phase !== "gameover";
+
+    const saved = state.checkpoint;
+
+    if (!show || !saved) {
+      return;
+    }
+
+    this.checkpointZone.textContent = String(saved.zone + 1);
+    this.checkpointScore.textContent = String(saved.score);
+    this.checkpointBest.textContent = String(state.best);
+    this.checkpointCoins.textContent = String(saved.runCoins);
+    this.checkpointCoinsTotal.textContent = String(saved.coins);
+  }
+
+  private applyZone(state: GameState, dt: number): void {
+    if (state.phase !== "playing") {
+      return;
+    }
+
+    const zone = Math.max(0, zoneIndex(state.player.z));
+
+    if (zone > this.lastZone) {
+      this.lastZone = zone;
+      this.setZone(zone);
+
+      if (!this.reducedMotion) {
+        this.zoneBanner.textContent = zoneLabel(zone * ZONE_ROWS);
+        this.zoneBanner.classList.remove("is-pop");
+        // Reflow so a zone crossed in quick succession restarts the pop.
+        void this.zoneBanner.offsetWidth;
+        this.zoneBanner.classList.add("is-pop");
+        this.zoneBanner.hidden = false;
+        this.bannerTimer = 1.4;
+      }
+    }
+
+    if (!this.paused && this.bannerTimer > 0) {
+      this.bannerTimer -= dt;
+      if (this.bannerTimer <= 0) {
+        this.bannerTimer = 0;
+        this.zoneBanner.hidden = true;
+      }
+    }
   }
 
   private popScore(): void {
