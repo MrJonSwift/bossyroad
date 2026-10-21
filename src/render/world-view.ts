@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { isZoneBoundary } from "../sim/zones";
 import type { Prop, WorldRow } from "../sim/types";
 import {
   bushGeometry,
@@ -25,6 +26,9 @@ const RAIL_TILES = [0x4a4f56, 0x474c53] as const;
 const RAIL_EDGE = 0xd8d2bd;
 const RAIL_METAL = 0x8d8d86;
 const SLEEPER = 0x6b4a2f;
+/** Zone-boundary kerb paint (art direction: Cream, UI accent yellow). */
+const KERB_CREAM = 0xfff4d6;
+const KERB_ACCENT = 0xffe47a;
 
 interface FoamStrip {
   mesh: THREE.Mesh;
@@ -286,6 +290,14 @@ export class WorldView {
     if (row.kind === "grass") {
       parts.push(planePart(0.2, 1.02, GRASS_EDGE, -4.55, 0.008, 0));
       parts.push(planePart(0.2, 1.02, GRASS_EDGE, 4.55, 0.008, 0));
+
+      // A zone boundary gets its finish-line kerb: a cream band at the near
+      // edge the player hops over, with the accent colour as the painted line
+      // just past it. Purely paint; the checkpoint rule lives in the sim.
+      if (isZoneBoundary(row.z)) {
+        parts.push(planePart(9.6, 0.18, KERB_CREAM, 0, 0.012, 0.34));
+        parts.push(planePart(9.6, 0.08, KERB_ACCENT, 0, 0.014, 0.45));
+      }
 
       const tufts = [-3.5, -0.7, 2.6];
       for (let i = 0; i < tufts.length; i += 1) {
