@@ -1,10 +1,10 @@
+import { APP_VERSION } from "../app/version";
 import {
   DEFAULT_CHARACTER_ID,
   characterName,
   type CharacterId,
 } from "../characters/catalogue";
 import { drawPortrait } from "../characters/portrait";
-import { APP_VERSION } from "../app/version";
 import type { RenderInfo } from "../render/renderer";
 import type { GameState, RunPhase } from "../sim/types";
 import { ZONE_ROWS, zoneIndex, zoneLabel } from "../sim/zones";

@@ -1140,7 +1140,7 @@ input {
 
 /**
  * A parent can confirm which build the device runs without opening settings.
- * It sits under every other HUD layer: fixed, non-interactive, muted, and
+ * It sits under no other HUD concern: fixed, non-interactive, muted, and
  * visible on every screen (title, cards, overlays) because z-index clears
  * the overlay stack.
  */

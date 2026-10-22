@@ -437,6 +437,10 @@ describe("tuning targets (ticket 10)", () => {
     // Pip's 10-coin price must fall inside about two beginner runs.
     expect(median(casualLifeRows)).toBeGreaterThanOrEqual(12);
     expect(median(casualCoins)).toBeGreaterThanOrEqual(5);
-    expect(expert.length).toBe(SEED_COUNT);
+    // The expert profile must not be tamed: mid-curve for the expert bot
+    // measured 84 rows per life at s10, so a future tuning change that
+    // softens it below ~70 gets flagged at review time.
+    expect(median(expert.map((run) => run.lives[0]?.bestRow ?? 0)))
+      .toBeGreaterThanOrEqual(70);
   });
 });
