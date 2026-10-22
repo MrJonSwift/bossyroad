@@ -40,8 +40,13 @@ const STREAM_DECORATION = 2;
 /** Coins have their own stream so tuning pickups cannot move a road. */
 const STREAM_COINS = 3;
 
-/** Chance that a grass row starts a short coin trail. */
-const COIN_TRAIL_CHANCE = 0.13;
+/**
+ * Chance that a grass row starts a short coin trail. Ticket 10 raised this
+ * from 0.13 and stretched the trails to 2-4 coins so the first unlock (Pip,
+ * 10 coins) lands inside about two beginner runs. The coins stream is
+ * separate from layout, so this cannot move a road.
+ */
+export const COIN_TRAIL_CHANCE = 0.22;
 /** Chance that a river row puts one coin on a wide log. */
 const COIN_ON_LOG_CHANCE = 0.16;
 /** A short trail teaches the rule on the first run. */
@@ -361,7 +366,7 @@ function addGrassCoin(gen: WorldGenerator, row: WorldRow): void {
   }
 
   const x = intRange(gen.coins, -3, 3);
-  const total = intRange(gen.coins, 2, 3);
+  const total = intRange(gen.coins, 2, 4);
   pushCoin(row, { x });
   gen.coinTrailX = x;
   gen.coinTrailLeft = total - 1;

@@ -4,6 +4,7 @@ import {
   type CharacterId,
 } from "../characters/catalogue";
 import { drawPortrait } from "../characters/portrait";
+import { APP_VERSION } from "../app/version";
 import type { RenderInfo } from "../render/renderer";
 import type { GameState, RunPhase } from "../sim/types";
 import { ZONE_ROWS, zoneIndex, zoneLabel } from "../sim/zones";
@@ -62,6 +63,8 @@ export class Hud {
     requiredElement<HTMLElement>("#checkpoint-coins-total");
   private readonly pauseButton =
     requiredElement<HTMLButtonElement>("#pause-button");
+  private readonly versionChip =
+    requiredElement<HTMLElement>("#version-chip");
   private readonly showDebug =
     new URLSearchParams(window.location.search).get("debug") === "1";
   private lastScore = -1;
@@ -85,6 +88,7 @@ export class Hud {
 
   constructor() {
     this.debug.hidden = !this.showDebug;
+    this.versionChip.textContent = `V${APP_VERSION}`;
     this.setCharacter(DEFAULT_CHARACTER_ID);
   }
 
