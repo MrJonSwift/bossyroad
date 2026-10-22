@@ -345,9 +345,24 @@ describe("difficulty curve", () => {
   it("clamps score to zero and one", () => {
     expect(difficultyForScore(-20)).toBe(0);
     expect(difficultyForScore(0)).toBe(0);
-    expect(difficultyForScore(50)).toBe(0.5);
     expect(difficultyForScore(100)).toBe(1);
     expect(difficultyForScore(1000)).toBe(1);
+  });
+
+  it("sags the early ramp so the opening rows sit near minimum (ticket 10)", () => {
+    expect(difficultyForScore(19)).toBeLessThanOrEqual(0.1);
+    expect(difficultyForScore(40)).toBeLessThan(0.25);
+    // Mid rows sit below what the old linear score/100 mapping would give.
+    expect(difficultyForScore(50)).toBeLessThan(0.5);
+    expect(difficultyForScore(50)).toBe(0.5 ** 1.7);
+  });
+
+  it("peaked at the cap, the envelope is byte-for-byte the shipped one", () => {
+    expect(carSpeedAt(difficultyForScore(100))).toBe(4.2);
+    expect(carGapAt(difficultyForScore(100))).toBeCloseTo(2.2, 10);
+    expect(logRunAt(difficultyForScore(100))).toBe(2);
+    expect(logSpeedAt(difficultyForScore(100))).toBeCloseTo(2.2, 10);
+    expect(trainWarningAt(difficultyForScore(100))).toBeCloseTo(1.2, 10);
   });
 
   it("stops numeric tuning at score 100", () => {

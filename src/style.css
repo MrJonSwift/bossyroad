@@ -1138,9 +1138,28 @@ input {
   }
 }
 
+/**
+ * A parent can confirm which build the device runs without opening settings.
+ * It sits under no other HUD concern: fixed, non-interactive, muted, and
+ * visible on every screen (title, cards, overlays) because z-index clears
+ * the overlay stack.
+ */
+.version-chip {
+  position: fixed;
+  bottom: calc(4px + var(--safe-bottom));
+  left: calc(8px + var(--safe-left));
+  z-index: 12;
+  color: rgba(29, 42, 34, 0.55);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .debug {
   position: absolute;
-  bottom: calc(12px + var(--safe-bottom));
+  bottom: calc(16px + var(--safe-bottom));
   left: calc(12px + var(--safe-left));
   z-index: 4;
   max-width: 46vw;

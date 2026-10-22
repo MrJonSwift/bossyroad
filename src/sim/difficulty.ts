@@ -11,11 +11,21 @@
  */
 export const DIFFICULTY_MAX_SCORE = 100;
 
+/**
+ * The ramp sags at the start so rows 0-19 sit near the minimum hazard mix
+ * (ticket 10: an adult player died inside zone 1 on the live build). A power
+ * curve keeps the cap end byte-identical: `difficultyForScore(100)` is 1 and
+ * the high-score envelope (car speed 4.2, gap 2.2, train warning 1.2 s) is
+ * untouched.
+ */
+export const DIFFICULTY_CURVE_POWER = 1.7;
+
 export function difficultyForScore(score: number): number {
   if (!Number.isFinite(score)) {
     return 0;
   }
-  return Math.min(1, Math.max(0, score / DIFFICULTY_MAX_SCORE));
+  const linear = Math.min(1, Math.max(0, score / DIFFICULTY_MAX_SCORE));
+  return Math.pow(linear, DIFFICULTY_CURVE_POWER);
 }
 
 export function lerp(from: number, to: number, t: number): number {
