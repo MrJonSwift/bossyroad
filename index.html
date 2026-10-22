@@ -32,6 +32,7 @@
           <div class="score-pill" id="score-pill">
             <span class="pill-label">SCORE</span>
             <span class="pill-value" id="score">0</span>
+            <span class="zone-label" id="zone-label" hidden></span>
           </div>
           <div class="hud-right">
             <div class="best-pill">
@@ -73,6 +74,7 @@
             </svg>
           </button>
         </div>
+        <div class="zone-banner" id="zone-banner" hidden></div>
         <div class="hint is-hidden" id="hint">TAP TO HOP &middot; SWIPE TO TURN</div>
         <div class="overlay title-overlay" id="title-screen">
           <div class="title-card">
@@ -125,6 +127,33 @@
             <p class="tap-prompt retry-prompt">TAP TO RETRY</p>
             <button class="ghost-button result-button" id="result-characters-button" type="button">
               CHARACTERS
+            </button>
+          </div>
+        </div>
+        <div class="overlay gameover-overlay" id="checkpoint-screen" hidden>
+          <div class="result-card checkpoint-card">
+            <h2 class="result-title checkpoint-title">
+              ZONE <span id="checkpoint-zone">1</span>
+            </h2>
+            <div class="result-stats">
+              <div class="result-stat">
+                <span>SCORE</span>
+                <strong id="checkpoint-score">0</strong>
+              </div>
+              <div class="result-stat">
+                <span>BEST</span>
+                <strong id="checkpoint-best">0</strong>
+              </div>
+            </div>
+            <div class="result-coins-row">
+              <p class="result-coins">COINS <strong id="checkpoint-coins">0</strong></p>
+              <p class="result-balance">TOTAL <strong id="checkpoint-coins-total">0</strong></p>
+            </div>
+            <button class="big-button result-button" id="checkpoint-retry-button" type="button">
+              TRY AGAIN
+            </button>
+            <button class="ghost-button result-button" id="checkpoint-finish-button" type="button">
+              FINISH
             </button>
           </div>
         </div>

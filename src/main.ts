@@ -35,7 +35,7 @@ import {
   type CharacterId,
 } from "./characters/catalogue";
 import { GameRenderer } from "./render/renderer";
-import { createGame, dispatch, startRun } from "./sim/game";
+import { createGame, dispatch, retryCheckpoint, startRun } from "./sim/game";
 import {
   selectCharacter,
   unlockCharacter,
@@ -119,6 +119,7 @@ function boot(): void {
     const reduced =
       save.settings.reducedMotion || Boolean(motionQuery?.matches);
     renderer.setReducedMotion(reduced);
+    hud.setReducedMotion(reduced);
     document.documentElement.classList.toggle("reduced-motion", reduced);
   };
 
@@ -385,6 +386,29 @@ function boot(): void {
     .querySelector<HTMLButtonElement>("#result-characters-button")
     ?.addEventListener("click", () => openCharacters());
 
+  // The checkpoint card hands the stage back to the plain game-over card.
+  // Clearing the snapshot does exactly that, with no extra HUD flag needed.
+  document
+    .querySelector<HTMLButtonElement>("#checkpoint-finish-button")
+    ?.addEventListener("click", () => {
+      if (state.phase !== "gameover" || state.checkpoint === null) {
+        return;
+      }
+
+      state.checkpoint = null;
+      sfx.play("start");
+    });
+
+  // TRY AGAIN resumes from the zone entry. The sim's own lock keeps the
+  // button honest during the first beat of the death, same as a full retry.
+  document
+    .querySelector<HTMLButtonElement>("#checkpoint-retry-button")
+    ?.addEventListener("click", () => {
+      if (retryCheckpoint(state)) {
+        sfx.play("start");
+      }
+    });
+
   setupInput(
     app,
     (direction) => {
@@ -392,7 +416,19 @@ function boot(): void {
         return;
       }
 
-      if (state.phase === "title" || state.phase === "gameover") {
+      if (state.phase === "title") {
+        startRun(state);
+        return;
+      }
+
+      if (state.phase === "gameover") {
+        // With a checkpoint, any tap or key means TRY AGAIN; without one the
+        // plain game-over card still restarts from row 0 on tap.
+        if (state.checkpoint !== null) {
+          retryCheckpoint(state);
+          return;
+        }
+
         startRun(state);
         return;
       }

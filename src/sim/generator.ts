@@ -16,7 +16,8 @@ import {
   logSpeedNear,
   wrapLogX,
 } from "./logs";
-import { clamp, intRange, range, substream, type Rng } from "./rng";
+import { clamp, copyRng, intRange, range, substream, type Rng } from "./rng";
+import { isZoneBoundary } from "./zones";
 import {
   type CoinSpec,
   type LaneSpec,
@@ -78,6 +79,19 @@ export function createWorldGenerator(seed: number, startZ: number): WorldGenerat
     coinTrailLeft: 0,
     lastKind: "grass",
     lastFeature: "grass",
+  };
+}
+
+/**
+ * A pure copy of the generator: streams re-created at the current position, so
+ * a snapshot can resume generation exactly where it paused.
+ */
+export function copyWorldGenerator(gen: WorldGenerator): WorldGenerator {
+  return {
+    ...gen,
+    layout: copyRng(gen.layout),
+    decoration: copyRng(gen.decoration),
+    coins: copyRng(gen.coins),
   };
 }
 
@@ -170,7 +184,7 @@ function padWithGrass(gen: WorldGenerator, out: WorldRow[], count: number): void
 function addRow(
   gen: WorldGenerator,
   out: WorldRow[],
-  kind: RowKind,
+  requestedKind: RowKind,
   options: {
     lane?: LaneSpec;
     river?: RiverSpec;
@@ -178,20 +192,25 @@ function addRow(
     props?: Prop[];
   } = {},
 ): void {
+  // Hard rule: the first row of every zone is safe grass, the same fairness
+  // standard as the safe row after every river. A checkpoint tile can never
+  // hold a moving hazard, whatever chunk it lands inside.
+  const kind = isZoneBoundary(gen.nextZ) ? "grass" : requestedKind;
+  const optionsDropped = kind !== requestedKind;
   const row: WorldRow = {
     z: gen.nextZ,
     kind,
     variant: Math.abs(gen.nextZ) % 2,
-    props: options.props ?? [],
+    props: optionsDropped ? [] : (options.props ?? []),
   };
 
-  if (options.lane) {
+  if (!optionsDropped && options.lane) {
     row.lane = options.lane;
   }
-  if (options.river) {
+  if (!optionsDropped && options.river) {
     row.river = options.river;
   }
-  if (options.rail) {
+  if (!optionsDropped && options.rail) {
     row.rail = options.rail;
   }
 
